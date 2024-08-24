@@ -23,7 +23,7 @@ function login($email, $password) {
         
         if (password_verify($password, $hashed_password)) {
             $_SESSION['user_id'] = $id;
-            $_SESSION['username'] = $username; // Set username in session
+            $_SESSION['username'] = $username; 
             $_SESSION['user_role'] = $role;
             return $role;
         }

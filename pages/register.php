@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Zoopac - Register</title>
     <style>
         body {
-            background: url('../images/pp.jpg') no-repeat center center fixed;
+            background: url('../images/112.webp') no-repeat center center fixed;
             background-size: cover;
             font-family: 'Arial', sans-serif;
             margin: 0;
@@ -51,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             max-width: 400px;
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.3);
+            margin-left: 700px;
         }
         h2 {
             color: #ffffff;
