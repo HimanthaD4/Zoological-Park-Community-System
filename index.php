@@ -16,7 +16,7 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background: url('images/111.jpg') no-repeat center center fixed ;
+            background: url('images/113.webp') no-repeat center center fixed ;
             background-size: cover;
             color: #ffffff;
             margin: 0;
@@ -200,7 +200,7 @@
         <div class="container">
             <h1>Welcome to ZooParc</h1>
             <p>Your adventure begins here. Explore, learn, and be a part of our vibrant community.</p>
-            <a href="pages/register.php" class="btn">Join Us</a>
+            <a href="pages/auth.php" class="btn">Join Us</a>
         </div>
     </div>
 
@@ -253,7 +253,7 @@
                     <div class="card-body">
                         <div class="card-title"><?php echo htmlspecialchars($content['title']); ?></div>
                         <div class="card-text"><?php echo nl2br(htmlspecialchars(substr($content['content'], 0, 100))); ?>...</div>
-                        <a href="pages/educational_content.php?id=<?php echo $content['id']; ?>" class="btn-view-more">Read More</a>
+                        <!-- <a href="pages/educational_content.php?id=<?php echo $content['id']; ?>" class="btn-view-more">Read More</a> -->
                     </div>
                 </div>
             <?php
@@ -263,7 +263,7 @@
             <p>No educational content available at the moment.</p>
         <?php endif; ?>
     </div>
-    <a href="pages/educational_content.php" class="btn-view-more">View All Content</a>
+    <a href="pages/member/member.php" class="btn-view-more">View All Content</a>
 </div>
 
 <!-- JavaScript and Bootstrap Scripts -->

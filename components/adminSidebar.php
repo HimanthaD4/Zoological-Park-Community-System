@@ -104,7 +104,7 @@
 </head>
 <body>
     <div class="sidebar">
-        <div class="logo">Zoopac Admin</div>
+        <div class="http://localhost/zooparc/pages/index.php">Zooparc Admin</div>
         <div class="menu-header">Admin</div>
         <a href="http://localhost/zooparc/pages/admin/adminDashboard.php" id="dashboard-link"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
         <div class="dropdown" id="content-dropdown">
@@ -121,9 +121,9 @@
                 <a href="http://localhost/zooparc/pages/admin/events/adminEvent.php">Scheduled Events</a>
             </div>
         </div>
-        <a href="admin_users.php" id="users-link"><i class="fas fa-users"></i> Manage Users</a>
-        <a href="admin_settings.php" id="settings-link"><i class="fas fa-cogs"></i> Settings</a>
-        <a href="../../logout.php" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        <a href="http://localhost/zooparc/pages/admin/adminUsers.php" id="users-link"><i class="fas fa-users"></i> Manage Users</a>
+        <a href="http://localhost/zooparc/pages/admin/settings.php" id="settings-link"><i class="fas fa-cogs"></i> Settings</a>
+        <a href="http://localhost/zooparc/pages/logout.php" id="logout-link"><i class="fas fa-sign-out-alt"></i> Logout</a>
     </div>
 
     <script>

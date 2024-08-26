@@ -1,34 +1,61 @@
 <?php
-include '../includes/functions.php';
+include '../../../includes/functions.php';
 session_start();
 
-if (!isLoggedIn() || isAdmin()) {
-    header('Location: login.php');
+// Check if user is logged in and is an admin
+if (!isLoggedIn() || !isAdmin()) {
+    header('Location: ../../auth.php');
     exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $content_id = $_POST['contentId'];
+    $contentId = $_POST['contentId'];
     $title = $_POST['title'];
     $content = $_POST['content'];
-    $image_path = '';
+    $image = $_FILES['image'];
 
-    if (isset($_FILES['image']) && $_FILES['image']['error'] == UPLOAD_ERR_OK) {
-        $target_dir = "../uploads/";
-        $target_file = $target_dir . basename($_FILES["image"]["name"]);
-        if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-            $image_path = basename($_FILES["image"]["name"]);
-        }
-    }
-
-    // Update the educational content in the database
-    $stmt = $conn->prepare("UPDATE educational_content SET title = ?, content = ?, image_path = ? WHERE id = ? AND member_id = ?");
-    $stmt->bind_param("sssii", $title, $content, $image_path, $content_id, $_SESSION['user_id']);
-    if ($stmt->execute()) {
-        header('Location: member.php');
+    if (empty($title) || empty($content)) {
+        $_SESSION['error'] = 'Title and content are required.';
+        header('Location: http://localhost/zooparc/pages/admin/contents/adminContent.php');
         exit();
-    } else {
-        echo "Failed to update content: " . $stmt->error;
     }
+
+    // Handle image upload if provided
+    if ($image['error'] === UPLOAD_ERR_OK) {
+        $imagePath = basename($image['name']);
+        $uploadDir = '../../../uploads/';
+        $uploadFile = $uploadDir . $imagePath;
+
+        if (move_uploaded_file($image['tmp_name'], $uploadFile)) {
+            $imageSql = ", image_path = ?";
+            $imageParam = $imagePath;
+        } else {
+            $_SESSION['error'] = 'Image upload failed.';
+            header('Location: http://localhost/zooparc/pages/admin/contents/adminContent.php');
+            exit();
+        }
+    } else {
+        $imageSql = "";
+        $imageParam = null;
+    }
+
+    // Update content
+    $sql = "UPDATE educational_content SET title = ?, content = ? $imageSql WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+
+    if ($imageSql) {
+        $stmt->bind_param('sssi', $title, $content, $imageParam, $contentId);
+    } else {
+        $stmt->bind_param('ssi', $title, $content, $contentId);
+    }
+
+    if ($stmt->execute()) {
+        $_SESSION['success'] = 'Content updated successfully.';
+    } else {
+        $_SESSION['error'] = 'Failed to update content.';
+    }
+
+    header('Location: http://localhost/zooparc/pages/admin/contents/adminContent.php');
+    exit();
 }
 ?>

@@ -1,9 +1,9 @@
 <?php
-include '../../includes/functions.php';
+include '../../../includes/functions.php';
 session_start();
 
 if (!isLoggedIn() ) {
-    header('Location: login.php');
+    header('Location: ../../auth.php');
     exit();
 }
 
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($image_path) {
                 unlink('../../uploads/' . $image_path);
             }
-            header('Location: http://localhost/zooparc/pages/admin/adminContent.php');
+            header('Location: http://localhost/zooparc/pages/admin/contents/adminContent.php');
             exit();
         } else {
             echo "Failed to delete content: " . $stmt->error;

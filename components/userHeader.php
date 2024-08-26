@@ -88,19 +88,20 @@ session_start();
 </head>
 <body>
 <header class="header">
-    <div class="logo">Zoopac</div>
+    <div class="logo">Zooparc</div>
     <div class="navigation">
         <a href="http://localhost/zooparc/index.php">Home</a>
-        <a href="pages/member.php">Community</a>
+        <a href="http://localhost/zooparc/pages/member/member.php">Community</a>
         <a href="http://localhost/zooparc/pages/user/educational.php">Educational</a>
-        <a href="pages/member.php">Events</a>
-        <a href="pages/member.php">About Us</a>
+        <a href="http://localhost/zooparc/pages/user/event.php">Events</a>
+        <a href="http://localhost/zooparc/pages/user/outlets.php">Shop</a>
+        <a href="http://localhost/zooparc/pages/user/aboutUs.php">About Us</a>
     </div>
     <div class="user-info">
         <?php if (isset($_SESSION['user_id'])): ?>
-            <a href="logout.php" class="logout">Logout</a>
+            <a href="http://localhost/zooparc/pages/logout.php" class="logout">Logout</a>
         <?php else: ?>
-            <a href="pages/auth.php" class="login">Login</a>
+            <a href="http://localhost/zooparc/pages/auth.php" class="login">Login</a>
         <?php endif; ?>
     </div>
 </header>

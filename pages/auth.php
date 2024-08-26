@@ -4,10 +4,10 @@ session_start();
 
 if (isLoggedIn()) {
     if (isAdmin()) {
-        header('Location: admin.php');
+        header('Location: admin/adminDashboard.php');
         exit();
     } else {
-        header('Location: member/member.php');
+        header('Location: ../index.php');
         exit();
     }
 }
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !$showRegister) {
             if ($role === 'admin') {
                 header('Location: admin/adminDashboard.php');
             } else {
-                header('Location: member.php');
+                header('Location: ../index.php');
             }
             exit();
         } else {
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $showRegister) {
         $error = "Invalid email format";
     } else {
         if (register($username, $email, $password)) {
-            header('Location: login.php');
+            header('Location: http://localhost/zooparc/pages/auth.php');
             exit();
         } else {
             $error = "Registration failed";
@@ -181,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $showRegister) {
     <div class="container">
         <div class="form-container left">
             <div class="form-content">
-                <h2>Login</h2>
+                <h2>Login as Volunteers </h2>
                 <?php if (isset($error)): ?>
                     <div class="alert alert-danger"><?php echo $error; ?></div>
                 <?php endif; ?>
@@ -201,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $showRegister) {
         </div>
         <div class="form-container right">
             <div class="form-content">
-                <h2>Register</h2>
+                <h2>Register as Volunteer</h2>
                 <?php if (isset($error)): ?>
                     <div class="alert alert-danger"><?php echo $error; ?></div>
                 <?php endif; ?>

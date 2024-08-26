@@ -4,7 +4,7 @@ session_start();
 
 // Ensure user is logged in
 if (!isLoggedIn()) {
-    header('Location: login.php');
+    header('Location: ../../auth.php');
     exit();
 }
 
@@ -19,13 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Validate inputs
     if (empty($title) || empty($content)) {
         $error = "Title and content are required.";
+    } elseif (!isset($_FILES['image']) || $_FILES['image']['error'] == UPLOAD_ERR_NO_FILE) {
+        $error = "An image is required.";
     } else {
         // Handle file upload
-        if (isset($_FILES['image']) && $_FILES['image']['error'] == UPLOAD_ERR_OK) {
+        if ($_FILES['image']['error'] == UPLOAD_ERR_OK) {
             $file_tmp = $_FILES['image']['tmp_name'];
             $file_name = $_FILES['image']['name'];
             $file_size = $_FILES['image']['size'];
-            $file_error = $_FILES['image']['error'];
             $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
             $allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
@@ -42,15 +43,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $error = "Invalid file type or size.";
             }
         }
+        
+        // Insert the educational content if no error occurred
+        if (!isset($error)) {
+            $stmt = $conn->prepare("INSERT INTO educational_content (member_id, title, content, image_path) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("isss", $member_id, $title, $content, $image_path);
 
-        // Insert the educational content
-        $stmt = $conn->prepare("INSERT INTO educational_content (member_id, title, content, image_path) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("isss", $member_id, $title, $content, $image_path);
-
-        if ($stmt->execute()) {
-            $success = "Content uploaded successfully!";
-        } else {
-            $error = "Failed to upload content: " . $stmt->error;
+            if ($stmt->execute()) {
+                // Redirect with a success message
+                header('Location: http://localhost/zooparc/pages/admin/contents/adminContent.php?success=1');
+                exit();
+            } else {
+                $error = "Failed to upload content: " . $stmt->error;
+            }
         }
     }
 }
@@ -148,9 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <?php if (isset($error)): ?>
             <div class="alert alert-danger"><?php echo $error; ?></div>
         <?php endif; ?>
-        <?php if (isset($success)): ?>
-            <div class="alert alert-success"><?php echo $success; ?></div>
-        <?php endif; ?>
         <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="title">Title</label>
@@ -161,8 +163,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <textarea class="form-control" id="content" name="content" rows="6" required></textarea>
             </div>
             <div class="form-group">
-                <label for="image">Image (optional)</label>
-                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                <label for="image">Image (required)</label>
+                <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
             </div>
             <button type="submit" class="btn btn-primary">Upload</button>
         </form>

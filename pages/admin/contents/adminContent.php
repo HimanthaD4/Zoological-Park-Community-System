@@ -2,24 +2,23 @@
 include '../../../includes/functions.php';
 session_start();
 
-if (!isLoggedIn() ) {
-    header('Location: login.php');
+// Check if user is logged in
+if (!isLoggedIn()) {
+    header('Location: ../../auth.php');
     exit();
 }
 
-// Get the logged-in user's ID from the session
-$member_id = $_SESSION['user_id'];
+// Check if user is an admin
+if (!isAdmin()) {
+    header('Location: http://localhost/zooparc/pages/auth.php');
+    exit();
+}
 
-// Fetch educational content created by the logged-in user
-$contentsQuery = "SELECT * FROM educational_content WHERE member_id = ? ORDER BY uploaded_at DESC";
+// Fetch all educational content
+$contentsQuery = "SELECT * FROM educational_content ORDER BY uploaded_at DESC";
 $stmt = $conn->prepare($contentsQuery);
-$stmt->bind_param("i", $member_id);
 $stmt->execute();
 $contentsResult = $stmt->get_result();
-
-// Fetch events
-$eventsQuery = "SELECT * FROM events ORDER BY date ASC";
-$eventsResult = mysqli_query($conn, $eventsQuery);
 ?>
 
 <!DOCTYPE html>
@@ -27,7 +26,7 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>All Educational Content</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
         body {
@@ -80,6 +79,7 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
             flex-wrap: wrap;
             gap: 20px;
             margin-top: 30px;
+            margin-left: 180px;
         }
         .card {
             background: rgba(255, 255, 255, 0.9);
@@ -110,19 +110,6 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
             font-size: 1rem;
             color: #333;
         }
-        .event-list {
-            list-style: none;
-            padding: 0;
-        }
-        .event-list li {
-            background: rgba(255, 255, 255, 0.8);
-            margin: 10px 0;
-            padding: 15px;
-            border-radius: 8px;
-        }
-        .event-list li:hover {
-            background: rgba(255, 255, 255, 1);
-        }
         .btn-update, .btn-delete {
             background: #dc3545;
             color: #fff;
@@ -134,7 +121,7 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
             transition: background 0.3s ease;
         }
         .btn-update {
-            background: #007bff;
+            background: #13a9cb;
             color: #fff;
             margin-right: 10px;
         }
@@ -163,7 +150,6 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
         .btn-secondary {
             background: #6c757d;
             color: #fff;
-           
         }
         .btn-secondary:hover {
             background: #5a6268;
@@ -183,21 +169,31 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
 <div class="content">
     <a class="upload-btn" href="http://localhost/zooparc/pages/admin/contents/uploadContent.php">Upload Educational Content</a>
     
-    
-    <h2>My Contents</h2>
+    <!-- Display Success or Error Messages -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success">
+            <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger">
+            <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
+        </div>
+    <?php endif; ?>
+
     <div class="card-container">
         <?php if ($contentsResult->num_rows > 0): ?>
             <?php while ($content = $contentsResult->fetch_assoc()): ?>
                 <div class="card">
                     <?php if ($content['image_path']): ?>
-                        <img src="../../uploads/<?php echo htmlspecialchars($content['image_path']); ?>" alt="<?php echo htmlspecialchars($content['title']); ?>">
+                        <img src="../../../uploads/<?php echo htmlspecialchars($content['image_path']); ?>" alt="<?php echo htmlspecialchars($content['title']); ?>">
                     <?php else: ?>
                         <img src="../../images/placeholder.jpg" alt="No image available">
                     <?php endif; ?>
                     <div class="card-content">
                         <div class="card-title"><?php echo htmlspecialchars($content['title']); ?></div>
                         <div class="card-text"><?php echo nl2br(htmlspecialchars($content['content'])); ?></div>
-                        <button class="btn-update" data-bs-toggle="modal" data-bs-target="#updateModal" data-id="<?php echo $content['id']; ?>" data-title="<?php echo htmlspecialchars($content['title']); ?>" data-content="<?php echo htmlspecialchars($content['content']); ?>">Update</button>
+                        <button class="btn-update" data-bs-toggle="modal" data-bs-target="#updateModal" data-id="<?php echo $content['id']; ?>" data-title="<?php echo htmlspecialchars($content['title']); ?>" data-content="<?php echo htmlspecialchars($content['content']); ?>" data-image="<?php echo htmlspecialchars($content['image_path']); ?>">Update</button>
                         <button class="btn-delete" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="<?php echo $content['id']; ?>">Delete</button>
                     </div>
                 </div>
@@ -206,47 +202,9 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
             <p>No educational content found.</p>
         <?php endif; ?>
     </div>
-    
-    <h2 class="mt-5">Scheduled Events</h2>
-    <ul class="event-list">
-        <?php while ($event = mysqli_fetch_assoc($eventsResult)): ?>
-            <li>
-                <strong><?php echo htmlspecialchars($event['title']); ?></strong><br>
-                <?php echo htmlspecialchars($event['description']); ?><br>
-                <em><?php echo htmlspecialchars($event['date']); ?></em>
-            </li>
-        <?php endwhile; ?>
-    </ul>
 </div>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Delete Content</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to delete this content? This action cannot be undone.
-            </div>
-            <div class="modal-footer">
-                <form id="deleteForm" action="delete_content.php" method="post">
-                    <input type="hidden" name="contentId" id="deleteContentId">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Update Content Modal -->
-<div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-               <!-- Update Content Modal -->
+<!-- Update Modal -->
 <div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -255,7 +213,7 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="updateForm" action="update_content.php" method="post" enctype="multipart/form-data">
+                <form id="updateForm" action="http://localhost/zooparc/pages/admin/contents/update_content.php" method="post" enctype="multipart/form-data">
                     <input type="hidden" name="contentId" id="updateContentId">
                     <div class="mb-3">
                         <label for="updateTitle" class="form-label">Title</label>
@@ -268,8 +226,34 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
                     <div class="mb-3">
                         <label for="updateImage" class="form-label">Image</label>
                         <input type="file" class="form-control" id="updateImage" name="image">
+                        <small class="form-text text-muted">Leave this blank if you don't want to update the image.</small>
                     </div>
-                    <button type="submit" class="btn btn-primary">Update</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Content</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this content?</p>
+            </div>
+            <div class="modal-footer">
+                <form id="deleteForm" action="http://localhost/zooparc/pages/admin/contents/delete_content.php" method="post">
+                    <input type="hidden" name="contentId" id="deleteContentId">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
             </div>
         </div>
@@ -278,36 +262,33 @@ $eventsResult = mysqli_query($conn, $eventsQuery);
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // JavaScript to populate modals with content data
-    document.addEventListener('DOMContentLoaded', function() {
-        var updateModal = document.getElementById('updateModal');
-        var deleteModal = document.getElementById('deleteModal');
+    // Update Modal
+    var updateModal = document.getElementById('updateModal');
+    updateModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget; // Button that triggered the modal
+        var contentId = button.getAttribute('data-id');
+        var title = button.getAttribute('data-title');
+        var content = button.getAttribute('data-content');
+        var image = button.getAttribute('data-image');
+
+        var modalTitle = updateModal.querySelector('.modal-title');
+        var modalContent = updateModal.querySelector('#updateForm');
         
-        updateModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var contentId = button.getAttribute('data-id');
-            var title = button.getAttribute('data-title');
-            var content = button.getAttribute('data-content');
-            
-            var modalTitle = updateModal.querySelector('.modal-title');
-            var modalBodyTitle = updateModal.querySelector('#updateTitle');
-            var modalBodyContent = updateModal.querySelector('#updateContent');
-            var modalBodyId = updateModal.querySelector('#updateContentId');
-            
-            modalTitle.textContent = 'Update Content';
-            modalBodyTitle.value = title;
-            modalBodyContent.textContent = content;
-            modalBodyId.value = contentId;
-        });
+        modalTitle.textContent = 'Update Content';
+        modalContent.querySelector('#updateContentId').value = contentId;
+        modalContent.querySelector('#updateTitle').value = title;
+        modalContent.querySelector('#updateContent').value = content;
+        modalContent.querySelector('#updateImage').value = ''; // Reset file input
+    });
+
+    // Delete Modal
+    var deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget; // Button that triggered the modal
+        var contentId = button.getAttribute('data-id');
         
-        deleteModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var contentId = button.getAttribute('data-id');
-            
-            var modalBodyId = deleteModal.querySelector('#deleteContentId');
-            
-            modalBodyId.value = contentId;
-        });
+        var modalContent = deleteModal.querySelector('#deleteForm');
+        modalContent.querySelector('#deleteContentId').value = contentId;
     });
 </script>
 </body>

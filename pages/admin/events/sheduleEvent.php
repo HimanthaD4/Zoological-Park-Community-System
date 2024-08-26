@@ -11,23 +11,35 @@ if (!isLoggedIn()) {
 // Get the logged-in user's ID from the session
 $member_id = $_SESSION['user_id'];
 
+// Include the database connection
+require_once '../../../includes/db.php';
+
+// Fetch members from the database
+$query = "SELECT id, username FROM users WHERE role = 'member'";
+$result = $conn->query($query);
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $title = $_POST['title'];
-    $description = $_POST['description'];
-    $category = $_POST['category'];
-    $tags = $_POST['tags'];
+    $title = trim($_POST['title']);
+    $description = trim($_POST['description']);
+    $category = trim($_POST['category']);
+    $tags = trim($_POST['tags']);
+    $event_date = trim($_POST['event_date']);
+    $assigned_member_id = trim($_POST['assigned_member_id']); // Retrieve selected member ID
     $image_path = null;
+    $error = '';
+    $success = '';
 
     // Validate inputs
-    if (empty($title) || empty($description) || empty($category)) {
-        $error = "Title, description, and category are required.";
+    if (empty($title) || empty($description) || empty($category) || empty($event_date) || empty($assigned_member_id)) {
+        $error = "Title, description, category, event date, and assigned member are required.";
+    } elseif (!isset($_FILES['image']) || $_FILES['image']['error'] == UPLOAD_ERR_NO_FILE) {
+        $error = "Image upload is required.";
     } else {
-        // Handle file upload (optional)
-        if (isset($_FILES['image']) && $_FILES['image']['error'] == UPLOAD_ERR_OK) {
+        // Handle file upload
+        if ($_FILES['image']['error'] == UPLOAD_ERR_OK) {
             $file_tmp = $_FILES['image']['tmp_name'];
             $file_name = $_FILES['image']['name'];
             $file_size = $_FILES['image']['size'];
-            $file_error = $_FILES['image']['error'];
             $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
             $allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
@@ -43,19 +55,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 $error = "Invalid file type or size.";
             }
+        } else {
+            $error = "Failed to upload image.";
         }
+    }
 
-        // Insert the event
-        $stmt = $conn->prepare("INSERT INTO events (title, description, date, category, tags) VALUES (?, ?, NOW(), ?, ?)");
-        $stmt->bind_param("ssss", $title, $description, $category, $tags);
+    // If no errors, insert the event
+    if (empty($error)) {
+        // Fetch member's name based on the selected member ID
+        $member_query = $conn->prepare("SELECT username FROM users WHERE id = ?");
+        $member_query->bind_param("i", $assigned_member_id);
+        $member_query->execute();
+        $member_query->bind_result($member_name);
+        $member_query->fetch();
+        $member_query->close();
+
+        // Insert event into database with member's name
+        $stmt = $conn->prepare("INSERT INTO events (title, description, event_date, category, tags, image_path, member_name) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssssss", $title, $description, $event_date, $category, $tags, $image_path, $member_name);
 
         if ($stmt->execute()) {
-            $success = "Event scheduled successfully!";
+            header('Location: http://localhost/zooparc/pages/admin/events/adminEvent.php');
+            exit();
         } else {
             $error = "Failed to schedule event: " . $stmt->error;
         }
+
+        $stmt->close();
     }
 }
+
+$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -66,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Schedule Event</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.9/flatpickr.min.css">
     <style>
         body {
             margin: 0;
@@ -154,6 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.9/flatpickr.min.js"></script>
     <script>
         function previewImage(input) {
             const file = input.files[0];
@@ -166,6 +198,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 reader.readAsDataURL(file);
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr("#eventDate", {
+                dateFormat: "Y-m-d",
+            });
+        });
     </script>
 </head>
 <body>
@@ -198,20 +236,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <option value="Conservation Talks">Conservation Talks</option>
                     <option value="Animal Adoption Events">Animal Adoption Events</option>
                     <option value="Wildlife Photography">Wildlife Photography</option>
-                    <option value="Volunteer Training">Volunteer Training</option>
-                    <option value="Themed Parties">Themed Parties</option>
-                    <option value="Fundraising Events">Fundraising Events</option>
                 </select>
             </div>
             <div class="form-group">
-                <label for="tags">Tags (comma separated)</label>
+                <label for="tags">Tags (comma-separated)</label>
                 <input type="text" id="tags" name="tags" class="form-control">
             </div>
             <div class="form-group">
-                <label for="image">Upload Image</label>
-                <input type="file" id="image" name="image" class="form-control" accept="image/*" onchange="previewImage(this)">
-                <div class="image-preview">
-                    <img id="imagePreview" src="" alt="Image Preview">
+                <label for="eventDate">Event Date</label>
+                <input type="text" id="eventDate" name="event_date" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="assigned_member">Assign Member</label>
+                <select id="assigned_member" name="assigned_member_id" class="form-control" required>
+                    <option value="">Select Member</option>
+                    <?php while ($row = $result->fetch_assoc()): ?>
+                        <option value="<?php echo $row['id']; ?>"><?php echo $row['username']; ?></option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="image">Event Image</label>
+                <input type="file" id="image" name="image" class="form-control" accept="image/*" onchange="previewImage(this)" required>
+                <div class="image-preview mt-3">
+                    <img id="imagePreview" src="#" alt="Image Preview">
                 </div>
             </div>
             <button type="submit" class="btn btn-primary">Schedule Event</button>
